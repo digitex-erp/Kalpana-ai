@@ -8,23 +8,4 @@ pages_build_output_dir = "dist"
 # Node.js compatibility for serverless functions
 compatibility_flags = ["nodejs_compat"]
 
-# Build configuration
-[build]
-command = "npm run build"
-cwd = ""
-
 # Environment variables are configured in the Cloudflare Dashboard
-# Settings → Environment Variables
-# Required variables:
-# - ANTHROPIC_API_KEY
-# - API_KEY
-# - CLOUDINARY_API_KEY
-# - CLOUDINARY_API_SECRET
-# - CLOUDINARY_CLOUD_NAME
-# - CLOUDINARY_URL
-# - DEEPSEEK_API_KEY
-# - GOOGLE_API_KEY
-# - HUGGING_FACE_API_KEY
-# - JSON2VIDEO_API_KEY
-# - MOONSHOT_API_KEY
-# - OPENAI_API_KEY

@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import DirectorMemoryManager from '../components/DirectorMemoryManager';
 import ApiHealthDashboard from '../components/ApiHealthDashboard';
+import AiSettingsPage from './AiSettingsPage';
 import { getAiSettings, saveAiSettings } from '../services/aiService';
 import { AiProvider, AiProviderSettings } from '../types';
 import { PROVIDER_CONFIGS } from '../services/apiHealth';
@@ -38,31 +39,34 @@ const SettingsPage: React.FC<SettingsPageProps> = ({ onBack }) => {
       <div className="space-y-8">
         {/* New Preferred Provider Selector */}
         <div className="bg-gray-800 rounded-lg p-6 border border-gray-700">
-            <h3 className="text-xl font-semibold text-white">Preferred AI Provider</h3>
-            <p className="text-gray-400 mt-1 mb-4">Select the primary AI provider to be used for all generations. The system will automatically failover to other active providers if your preferred choice is unavailable.</p>
-            <select 
-              value={settings.preferredProvider || 'claude'} 
-              onChange={handleProviderChange} 
-              className="w-full max-w-sm p-3 bg-gray-700 border border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-cyan-500 focus:border-cyan-500"
-              aria-label="Select Preferred AI Provider"
-            >
-                {availableProviders.map(provider => (
-                    <option key={provider.id} value={provider.id}>{provider.name}</option>
-                ))}
-            </select>
+          <h3 className="text-xl font-semibold text-white">Preferred AI Provider</h3>
+          <p className="text-gray-400 mt-1 mb-4">Select the primary AI provider to be used for all generations. The system will automatically failover to other active providers if your preferred choice is unavailable.</p>
+          <select
+            value={settings.preferredProvider || 'claude'}
+            onChange={handleProviderChange}
+            className="w-full max-w-sm p-3 bg-gray-700 border border-gray-600 rounded-lg shadow-sm focus:outline-none focus:ring-cyan-500 focus:border-cyan-500"
+            aria-label="Select Preferred AI Provider"
+          >
+            {availableProviders.map(provider => (
+              <option key={provider.id} value={provider.id}>{provider.name}</option>
+            ))}
+          </select>
         </div>
-        
+
+        {/* API Key Configuration */}
+        <AiSettingsPage />
+
         {/* API Health Dashboard */}
         <ApiHealthDashboard />
-        
+
         {/* Director Memory Manager remains */}
         <DirectorMemoryManager />
       </div>
 
-       <div className="mt-4 border-t border-gray-700 pt-6 flex justify-end">
-         <p className="text-sm text-gray-500 italic">
-            The preferred provider is used first, then the system automatically fails over to other active providers.
-         </p>
+      <div className="mt-4 border-t border-gray-700 pt-6 flex justify-end">
+        <p className="text-sm text-gray-500 italic">
+          The preferred provider is used first, then the system automatically fails over to other active providers.
+        </p>
       </div>
     </div>
   );

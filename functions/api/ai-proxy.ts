@@ -73,44 +73,44 @@ async function handleClaude(prompt: string, images?: string[], systemPrompt?: st
 
 // DeepSeek Handler - BEST VALUE & NOW WITH VISION
 async function handleDeepSeek(prompt: string, images?: string[], systemPrompt?: string, test: boolean = false, env?: Env): Promise<string> {
-    const DEEPSEEK_API_KEY = env?.DEEPSEEK_API_KEY;
-    if (!DEEPSEEK_API_KEY) throw new Error('DeepSeek API key not configured');
-    if (test) return 'OK';
+  const DEEPSEEK_API_KEY = env?.DEEPSEEK_API_KEY;
+  if (!DEEPSEEK_API_KEY) throw new Error('DeepSeek API key not configured');
+  if (test) return 'OK';
 
-    const hasImages = images && images.length > 0;
-    const model = hasImages ? 'deepseek-vision' : 'deepseek-chat';
-    console.log(`[DeepSeek] Generating with ${model}`);
-    
-    const messages: any[] = [];
-    if (systemPrompt) {
-        messages.push({ role: 'system', content: systemPrompt });
-    }
+  const hasImages = images && images.length > 0;
+  const model = hasImages ? 'deepseek-vision' : 'deepseek-chat';
+  console.log(`[DeepSeek] Generating with ${model}`);
 
-    let userContent: any;
-    if (hasImages) {
-        const contentParts: any[] = [{ type: 'text', text: prompt }];
-        for (const imageUrl of images) {
-          contentParts.push({ type: 'image_url', image_url: { url: imageUrl } });
-        }
-        userContent = contentParts;
-    } else {
-        userContent = prompt;
-    }
-    
-    messages.push({ role: 'user', content: userContent });
+  const messages: any[] = [];
+  if (systemPrompt) {
+    messages.push({ role: 'system', content: systemPrompt });
+  }
 
-    const response = await fetch('https://api.deepseek.com/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${DEEPSEEK_API_KEY}` },
-        body: JSON.stringify({ model, messages, max_tokens: 4096, temperature: 0.7 })
-    });
-    if (!response.ok) { 
-        const errorText = await response.text(); 
-        console.error("DeepSeek API Raw Error:", errorText);
-        throw new Error(`DeepSeek API failed: ${errorText}`); 
+  let userContent: any;
+  if (hasImages) {
+    const contentParts: any[] = [{ type: 'text', text: prompt }];
+    for (const imageUrl of images) {
+      contentParts.push({ type: 'image_url', image_url: { url: imageUrl } });
     }
-    const data = await response.json();
-    return data.choices[0]?.message?.content || '';
+    userContent = contentParts;
+  } else {
+    userContent = prompt;
+  }
+
+  messages.push({ role: 'user', content: userContent });
+
+  const response = await fetch('https://api.deepseek.com/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${DEEPSEEK_API_KEY}` },
+    body: JSON.stringify({ model, messages, max_tokens: 4096, temperature: 0.7 })
+  });
+  if (!response.ok) {
+    const errorText = await response.text();
+    console.error("DeepSeek API Raw Error:", errorText);
+    throw new Error(`DeepSeek API failed: ${errorText}`);
+  }
+  const data = await response.json();
+  return data.choices[0]?.message?.content || '';
 }
 
 // Perplexity Handler - DISABLED
@@ -132,14 +132,14 @@ async function handleMoonshot(prompt: string, images?: string[], systemPrompt?: 
   if (systemPrompt) {
     messages.unshift({ role: 'system', content: systemPrompt } as any);
   }
-   const response = await fetch('https://api.moonshot.cn/v1/chat/completions', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${MOONSHOT_API_KEY}` },
-        body: JSON.stringify({ model: 'moonshot-v1-8k', messages, max_tokens: 4096, temperature: 0.7 })
-    });
-    if (!response.ok) { const error = await response.text(); throw new Error(`Moonshot API failed: ${error}`); }
-    const data = await response.json();
-    return data.choices[0]?.message?.content || '';
+  const response = await fetch('https://api.moonshot.cn/v1/chat/completions', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${MOONSHOT_API_KEY}` },
+    body: JSON.stringify({ model: 'moonshot-v1-8k', messages, max_tokens: 4096, temperature: 0.7 })
+  });
+  if (!response.ok) { const error = await response.text(); throw new Error(`Moonshot API failed: ${error}`); }
+  const data = await response.json();
+  return data.choices[0]?.message?.content || '';
 }
 
 // OpenAI Handler - Fully functional vision/text provider
@@ -233,35 +233,35 @@ async function handleXAI(prompt: string, images?: string[], systemPrompt?: strin
 
 // Gemini Handler - VISION CAPABLE FALLBACK
 async function handleGemini(prompt: string, images?: string[], systemPrompt?: string, test: boolean = false, env?: Env): Promise<string> {
-    const GOOGLE_API_KEY = env?.GOOGLE_API_KEY || env?.API_KEY;
-    if (!GOOGLE_API_KEY) throw new Error('Google API key not configured');
-    if (test) return 'OK';
+  const GOOGLE_API_KEY = env?.GOOGLE_API_KEY || env?.API_KEY;
+  if (!GOOGLE_API_KEY) throw new Error('Google API key not configured');
+  if (test) return 'OK';
 
-    const hasImages = images && images.length > 0;
-    const modelName = hasImages ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
-    console.log(`[Gemini] Generating with ${modelName}`);
+  const hasImages = images && images.length > 0;
+  const modelName = hasImages ? 'gemini-2.5-pro' : 'gemini-2.5-flash';
+  console.log(`[Gemini] Generating with ${modelName}`);
 
-    const ai = new GoogleGenAI({ apiKey: GOOGLE_API_KEY });
-    
-    const parts: any[] = [{ text: prompt }];
-    if (hasImages) {
-        for (const imageUrl of images) {
-            if (imageUrl.startsWith('data:image/')) {
-                const match = imageUrl.match(/^data:image\/(\w+);base64,(.+)$/);
-                if (match) {
-                    parts.unshift({ inlineData: { mimeType: `image/${match[1]}`, data: match[2] } });
-                }
-            }
+  const ai = new GoogleGenAI({ apiKey: GOOGLE_API_KEY });
+
+  const parts: any[] = [{ text: prompt }];
+  if (hasImages) {
+    for (const imageUrl of images) {
+      if (imageUrl.startsWith('data:image/')) {
+        const match = imageUrl.match(/^data:image\/(\w+);base64,(.+)$/);
+        if (match) {
+          parts.unshift({ inlineData: { mimeType: `image/${match[1]}`, data: match[2] } });
         }
+      }
     }
-    
-    const response = await ai.models.generateContent({
-        model: modelName,
-        contents: { parts: parts },
-        config: systemPrompt ? { systemInstruction: systemPrompt } : {}
-    });
-    
-    return response.text;
+  }
+
+  const response = await ai.models.generateContent({
+    model: modelName,
+    contents: { parts: parts },
+    config: systemPrompt ? { systemInstruction: systemPrompt } : {}
+  });
+
+  return response.text;
 }
 
 // Main Cloudflare Pages handler
@@ -279,36 +279,47 @@ export async function onRequest(context: CloudflareContext) {
   }
 
   try {
-    const { provider, prompt, images, systemPrompt, test } = await request.json();
-    
+    const { provider, prompt, images, systemPrompt, test, apiKeys } = await request.json();
+
+    // Override environment variables with client-provided keys if present
+    const effectiveEnv = { ...env };
+    if (apiKeys) {
+      if (apiKeys.claude) effectiveEnv.ANTHROPIC_API_KEY = apiKeys.claude;
+      if (apiKeys.openai) effectiveEnv.OPENAI_API_KEY = apiKeys.openai;
+      if (apiKeys.moonshot) effectiveEnv.MOONSHOT_API_KEY = apiKeys.moonshot;
+      if (apiKeys.gemini) effectiveEnv.GOOGLE_API_KEY = apiKeys.gemini;
+      if (apiKeys.xai) effectiveEnv.XAI_API_KEY = apiKeys.xai;
+      if (apiKeys.deepseek) effectiveEnv.DEEPSEEK_API_KEY = apiKeys.deepseek;
+    }
+
     let result: any;
-    
+
     switch (provider) {
       case 'claude':
-        result = await handleClaude(prompt, images, systemPrompt, test, env);
+        result = await handleClaude(prompt, images, systemPrompt, test, effectiveEnv);
         break;
       case 'deepseek':
-        result = await handleDeepSeek(prompt, images, systemPrompt, test, env);
+        result = await handleDeepSeek(prompt, images, systemPrompt, test, effectiveEnv);
         break;
       case 'perplexity':
         result = await handlePerplexity();
         break;
       case 'gemini':
-        result = await handleGemini(prompt, images, systemPrompt, test, env);
+        result = await handleGemini(prompt, images, systemPrompt, test, effectiveEnv);
         break;
       case 'moonshot':
-        result = await handleMoonshot(prompt, images, systemPrompt, test, env);
+        result = await handleMoonshot(prompt, images, systemPrompt, test, effectiveEnv);
         break;
       case 'openai':
-         result = await handleOpenAI(prompt, images, systemPrompt, test, env);
-         break;
+        result = await handleOpenAI(prompt, images, systemPrompt, test, effectiveEnv);
+        break;
       case 'xai':
-         result = await handleXAI(prompt, images, systemPrompt, test, env);
-         break;
+        result = await handleXAI(prompt, images, systemPrompt, test, effectiveEnv);
+        break;
       default:
         return jsonResponse({ success: false, error: `Unsupported AI provider: ${provider}` }, 400);
     }
-    
+
     return jsonResponse({ success: true, data: result });
   } catch (error: any) {
     console.error(`[AI Proxy Error]`, error);

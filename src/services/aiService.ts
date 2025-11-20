@@ -4,10 +4,10 @@ import { AiProviderSettings, AiProvider } from "../types";
 const SETTINGS_KEY = 'kalpana_ai_settings_v1';
 
 // This function now calls the unified proxy
-export async function callAI(options: { 
-  provider: string; 
-  endpoint?: string; 
-  body?: any; 
+export async function callAI(options: {
+  provider: string;
+  endpoint?: string;
+  body?: any;
   prompt?: string;
   images?: string[];
   systemPrompt?: string;
@@ -17,6 +17,7 @@ export async function callAI(options: {
     const settings = getAiSettings();
     const payload = {
       provider: provider || settings.provider,
+      apiKeys: settings.apiKeys,
       ...rest
     };
 
@@ -43,11 +44,11 @@ export async function callAI(options: {
     if (error && error.error && error.message) {
       throw error;
     }
-    
+
     // Otherwise, wrap network/parsing errors in a standard error structure for the UI.
-    throw { 
-      success: false, 
-      error: 'client_side_error', 
+    throw {
+      success: false,
+      error: 'client_side_error',
       message: `🌐 Connection Error: ${error.message || 'Failed to communicate with the AI service. Please check your network connection.'}`,
       details: { raw: error.toString() },
       fix: {
@@ -59,24 +60,24 @@ export async function callAI(options: {
 }
 
 export const getAiSettings = (): AiProviderSettings => {
-    const defaultSettings: AiProviderSettings = {
-      provider: 'claude', // Default to a high-quality provider
-      huggingFaceModel: 'mistralai/Mistral-7B-Instruct-v0.2',
-      moonshotModel: 'moonshot-v1-8k',
-      deepseekModel: 'deepseek-chat',
-      ollamaModel: 'llava',
-      ollamaServerUrl: 'http://localhost:11434',
-    };
-    try {
-        const saved = localStorage.getItem(SETTINGS_KEY);
-        const parsed = saved ? JSON.parse(saved) : {};
-        // The preferredProvider is not given a default, so if it's not set by the user,
-        // the auto-failover service will use its own priority list.
-        const finalSettings = { ...defaultSettings, ...parsed };
-        return finalSettings;
-    } catch (e) {
-        return defaultSettings;
-    }
+  const defaultSettings: AiProviderSettings = {
+    provider: 'claude', // Default to a high-quality provider
+    huggingFaceModel: 'mistralai/Mistral-7B-Instruct-v0.2',
+    moonshotModel: 'moonshot-v1-8k',
+    deepseekModel: 'deepseek-chat',
+    ollamaModel: 'llava',
+    ollamaServerUrl: 'http://localhost:11434',
+  };
+  try {
+    const saved = localStorage.getItem(SETTINGS_KEY);
+    const parsed = saved ? JSON.parse(saved) : {};
+    // The preferredProvider is not given a default, so if it's not set by the user,
+    // the auto-failover service will use its own priority list.
+    const finalSettings = { ...defaultSettings, ...parsed };
+    return finalSettings;
+  } catch (e) {
+    return defaultSettings;
+  }
 };
 
 export const saveAiSettings = (settings: AiProviderSettings) => {

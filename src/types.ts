@@ -188,30 +188,30 @@ export interface VideoProject {
 
 // For Director Memory
 export interface MemoryEntry {
-    date: string;
-    timestamp: number;
-    projects: string[];
-    feedback: string[];
-    successes: string[];
-    directives: string[];
+  date: string;
+  timestamp: number;
+  projects: string[];
+  feedback: string[];
+  successes: string[];
+  directives: string[];
 }
 
 // For Training Analysis
 export interface TrainingAnalysisReport {
-    overallProgress: string;
-    trendAnalysis: {
-        avgVideoDuration: string;
-        avgScenesPerVideo: string;
-        improvementOverV1: string;
-    };
-    topLearnedRules: string[];
-    styleInsights: {
-        dominantTone: string;
-        camera: string;
-        lighting: string;
-        text: string;
-    };
-    weakPoints: string[];
+  overallProgress: string;
+  trendAnalysis: {
+    avgVideoDuration: string;
+    avgScenesPerVideo: string;
+    improvementOverV1: string;
+  };
+  topLearnedRules: string[];
+  styleInsights: {
+    dominantTone: string;
+    camera: string;
+    lighting: string;
+    text: string;
+  };
+  weakPoints: string[];
 }
 
 // For Templates
@@ -243,6 +243,7 @@ export interface AiProviderSettings {
   deepseekModel: string;
   ollamaModel: string;
   ollamaServerUrl: string;
+  apiKeys?: Record<string, string>;
 }
 
 // Types for Professional Script Generation
