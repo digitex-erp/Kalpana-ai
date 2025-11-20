@@ -233,12 +233,11 @@ export interface CategoryTemplate {
 }
 
 // For AI Service
-export type AiProvider = 'gemini' | 'mock' | 'claude' | 'deepseek' | 'moonshot' | 'ollama' | 'huggingface' | 'openai' | 'perplexity' | 'xai';
+export type AiProvider = 'gemini' | 'mock' | 'claude' | 'deepseek' | 'moonshot' | 'ollama' | 'openai' | 'perplexity' | 'xai';
 
 export interface AiProviderSettings {
   provider: AiProvider;
   preferredProvider?: AiProvider;
-  huggingFaceModel: string;
   moonshotModel: string;
   deepseekModel: string;
   ollamaModel: string;

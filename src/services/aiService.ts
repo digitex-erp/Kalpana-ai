@@ -61,8 +61,7 @@ export async function callAI(options: {
 
 export const getAiSettings = (): AiProviderSettings => {
   const defaultSettings: AiProviderSettings = {
-    provider: 'claude', // Default to a high-quality provider
-    huggingFaceModel: 'mistralai/Mistral-7B-Instruct-v0.2',
+    provider: 'gemini',
     moonshotModel: 'moonshot-v1-8k',
     deepseekModel: 'deepseek-chat',
     ollamaModel: 'llava',
