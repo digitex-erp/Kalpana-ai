@@ -13,9 +13,6 @@ compatibility_flags = ["nodejs_compat"]
 command = "npm run build"
 cwd = ""
 
-[build.upload]
-format = "service-worker"
-
 # Environment variables are configured in the Cloudflare Dashboard
 # Settings → Environment Variables
 # Required variables:
