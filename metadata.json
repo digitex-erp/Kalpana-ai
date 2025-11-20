@@ -1,0 +1,7 @@
+{
+  "name": "AI Product Video Generator",
+  "description": "An application that generates a product video from an image and a text prompt using the Gemini API. Upload a product image, describe the video you want, and let AI bring it to life.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

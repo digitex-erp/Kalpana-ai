@@ -1,0 +1,19 @@
+{
+  "service": "generateVideoFromStoryboard",
+  "payload": {
+    "prompt": "# 🧠 GEMINI AI STUDIO ... (full prompt for video generation)",
+    "image": {
+      "imageBytes": "/9j/4AAQSkZJRgABAQEASABIAAD...",
+      "mimeType": "image/jpeg"
+    },
+    "referenceImages": [
+      {
+        "imageBytes": "/9j/4AAQSkZJRgABAQEASABIAAD...",
+        "mimeType": "image/jpeg"
+      }
+    ],
+    "generationConfig": {
+      "aspectRatio": "9:16"
+    }
+  }
+}

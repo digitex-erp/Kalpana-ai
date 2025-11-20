@@ -1,0 +1,183 @@
+{
+  "name": "Kalpana AI Studio - Advanced Creative Workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Start",
+      "type": "n8n-nodes-base.start",
+      "typeVersion": 1,
+      "position": [
+        20,
+        300
+      ],
+      "id": "e1f1a534-9241-4a23-8b7a-8f5c3b7f1c6a"
+    },
+    {
+      "parameters": {
+        "path": "kalpana-advanced-workflow",
+        "httpMethod": "POST",
+        "options": {
+          "binaryData": true,
+          "rawBody": "multiparts"
+        }
+      },
+      "name": "Webhook2",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        240,
+        300
+      ],
+      "id": "e4d7b2e3-9c8a-4f6b-8e1d-2a1b3c4d5e6f",
+      "webhookId": "f1g2h3i4-j5k6-7l8m-9n0o-p1q2r3s4t5u6"
+    },
+    {
+      "parameters": {
+        "jsCode": "const jsonData = $input.item.json;\nconst creativeBrief = {};\n\n// The frontend sends each key of the creative brief object as a top-level form field,\n// with its value being a JSON string.\nfor (const key in jsonData) {\n  try {\n    // This will correctly parse stringified objects, numbers, booleans, and strings.\n    creativeBrief[key] = JSON.parse(jsonData[key]);\n  } catch (e) {\n    // Fallback for any value that isn't valid JSON.\n    creativeBrief[key] = jsonData[key];\n  }\n}\n\n// Pass the structured brief and the binary data to the next node\nreturn [{\n  json: creativeBrief,\n  binary: {\n    // The 'image' key here must match the name attribute of the file input in the HTML form.\n    image: $input.item.binary.image\n  }\n}];"
+      },
+      "name": "1. Process Creative Brief",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        460,
+        300
+      ],
+      "id": "a9b8c7d6-e5f4-3g2h-1i0j-k9l8m7n6o5p4"
+    },
+    {
+      "parameters": {
+        "model": "gemini-2.5-flash",
+        "operation": "chat",
+        "text": "={{`**ROLE: AI Creative Director for Social Media Video Ads**\n\n**TASK: Integrated Product & Market Analysis**\n\nYou are tasked with analyzing a product to create a comprehensive creative strategy for a short social media video ad (15-30 seconds).\n\n**ANALYSIS INPUTS:**\n\n1.  **Product Data:**\n    \\`\\`\\`json\n    ${JSON.stringify($json.product, null, 2)}\n    \\`\\`\\`\n\n2.  **Targeting Data:**\n    \\`\\`\\`json\n    ${JSON.stringify($json.targeting, null, 2)}\n    \\`\\`\\`\n\n3.  **Primary Language:** ${$json.language}\n\n4.  **Attached Image(s):** Analyze the provided product image(s) for visual details (material, texture, color, style, context).\n\n**INSTRUCTIONS:**\n\n1.  **Analyze Inputs:** Synthesize information from the product data, targeting data, and the provided image(s).\n2.  **Use Google Search:** Research current visual trends, popular use cases, and marketing angles for the product category and target audience.\n3.  **Generate Report:** Based on your analysis, complete the following JSON object. Be thorough, creative, and strategic. Your output will be directly used to generate a video script and storyboard.\n\n**REQUIRED JSON OUTPUT FORMAT:**\nFollow the provided JSON schema precisely. Provide your response as a single, valid JSON object.`}}",
+        "options": {
+          "responseMimeType": "application/json",
+          "tools": {
+            "values": [
+              {
+                "googleSearch": {}
+              }
+            ]
+          },
+          "inputData": {
+            "binaryPropertyName": "image"
+          }
+        }
+      },
+      "name": "2. Perform Integrated Analysis",
+      "type": "n8n-nodes-base.googleGenerativeAi",
+      "typeVersion": 1,
+      "position": [
+        680,
+        300
+      ],
+      "id": "b1c2d3e4-f5g6-7h8i-9j0k-l1m2n3o4p5q6"
+    },
+    {
+      "parameters": {
+        "jsCode": "// The Gemini node outputs a JSON object where the result is a JSON string in the 'text' property.\nconst analysisReport = JSON.parse($input.item.json.text);\n\n// Get the original creative brief data from the first processing node.\nconst briefData = $('1. Process Creative Brief').item.json;\n\n// Combine the original brief with the new analysis report.\nconst fullData = { ...briefData, analysisReport };\n\nconst { product, language, videoLength, brandKit, targeting, music } = fullData;\n\n// This replicates the logic from the app's `createStoryboardPrompt` function.\nconst prompt = `**ROLE: AI Scriptwriter & Storyboard Artist**\n\n**TASK: Create a Storyboard for a Short Video Ad**\n\nBased on the comprehensive analysis report and creative brief provided, generate a complete storyboard for a ${videoLength}-second video ad.\n\n**CREATIVE BRIEF & ANALYSIS REPORT:**\n    \\`\\`\\`json\n    ${JSON.stringify({ product, language, videoLength, brandKit, targeting, music, analysisReport }, null, 2)}\n    \\`\\`\\`\n\n**INSTRUCTIONS:**\n\n1.  **Scene Breakdown:** Create a sequence of scenes that tell a compelling story about the product. The number of scenes should be appropriate for a ${videoLength}-second video (typically 3-6 scenes).\n2.  **Visuals:** For each scene, write a concise but evocative visual description.\n3.  **Dialogue (Narration):** Write the narration script. Provide BOTH English and Hindi translations.\n4.  **Text Overlays:** Add short, impactful text overlays (3-5 words) for key scenes.\n5.  **Branded Outro:** If requested in the brand kit, the final scene should be a clear outro.\n\n**REQUIRED JSON OUTPUT FORMAT:**\nGenerate a single, valid JSON object that follows the specified schema precisely.`;\n\n// Pass on the combined data and the new prompt to the next node.\nreturn [{\n  json: {\n    ...fullData,\n    storyboardPrompt: prompt\n  }\n}];"
+      },
+      "name": "3. Prepare Storyboard Prompt",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        900,
+        300
+      ],
+      "id": "c3d4e5f6-g7h8-9i0j-k1l2-m3n4o5p6q7r8"
+    },
+    {
+      "parameters": {
+        "model": "gemini-2.5-flash",
+        "operation": "chat",
+        "text": "={{$json.storyboardPrompt}}",
+        "options": {
+          "responseMimeType": "application/json"
+        }
+      },
+      "name": "4. Generate Storyboard",
+      "type": "n8n-nodes-base.googleGenerativeAi",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        300
+      ],
+      "id": "d5e6f7g8-h9i0-j1k2-l3m4-n5o6p7q8r9s0"
+    },
+    {
+      "parameters": {
+        "jsCode": "// The previous Gemini node provides the storyboard as a JSON string in the 'text' field.\nconst storyboard = JSON.parse($input.item.json.text);\n\n// The frontend expects a data URI that it can use to trigger a download.\nconst jsonStr = JSON.stringify(storyboard, null, 2);\nconst downloadUrl = `data:application/json;charset=utf-8,${encodeURIComponent(jsonStr)}`;\n\n// This is the final response sent back to the frontend application.\nreturn {\n  json: {\n    success: true,\n    downloadUrl: downloadUrl\n  }\n};"
+      },
+      "name": "5. Create Downloadable...",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        300
+      ],
+      "id": "e7f8g9h0-i1j2-k3l4-m5n6-o7p8q9r0s1t2"
+    }
+  ],
+  "connections": {
+    "Webhook2": {
+      "main": [
+        [
+          {
+            "node": "1. Process Creative Brief",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. Process Creative Brief": {
+      "main": [
+        [
+          {
+            "node": "2. Perform Integrated Analysis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Perform Integrated Analysis": {
+      "main": [
+        [
+          {
+            "node": "3. Prepare Storyboard Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. Prepare Storyboard Prompt": {
+      "main": [
+        [
+          {
+            "node": "4. Generate Storyboard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. Generate Storyboard": {
+      "main": [
+        [
+          {
+            "node": "5. Create Downloadable...",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {},
+  "id": "1",
+  "meta": {
+    "templateCredsSetupCompleted": true
+  }
+}

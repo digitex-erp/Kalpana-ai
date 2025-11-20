@@ -1,0 +1,19 @@
+{
+  "service": "generateStoryboard",
+  "payload": {
+    "model": "gemini-2.5-flash",
+    "contents": [
+      {
+        "role": "user",
+        "parts": [
+          {
+            "text": "# 🧠 GEMINI AI STUDIO ... (full prompt text here)"
+          }
+        ]
+      }
+    ],
+    "generationConfig": {
+      "responseMimeType": "application/json"
+    }
+  }
+}

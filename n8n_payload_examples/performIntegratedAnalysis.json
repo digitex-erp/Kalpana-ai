@@ -1,0 +1,24 @@
+{
+  "service": "performIntegratedAnalysis",
+  "payload": {
+    "model": "gemini-2.5-flash",
+    "contents": {
+      "parts": [
+        {
+          "text": "..."
+        },
+        {
+          "inlineData": {
+            "mimeType": "image/jpeg",
+            "data": "..."
+          }
+        }
+      ]
+    },
+    "tools": [
+      {
+        "googleSearch": {}
+      }
+    ]
+  }
+}

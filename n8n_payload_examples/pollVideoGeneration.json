@@ -1,0 +1,9 @@
+{
+  "service": "pollVideoGeneration",
+  "payload": {
+    "operation": {
+      "name": "operations/01234567890123456789",
+      "done": false
+    }
+  }
+}

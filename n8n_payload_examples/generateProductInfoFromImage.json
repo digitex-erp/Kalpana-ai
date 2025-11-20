@@ -1,0 +1,22 @@
+{
+  "service": "generateProductInfoFromImage",
+  "payload": {
+    "model": "gemini-2.5-flash",
+    "contents": {
+      "parts": [
+        {
+          "text": "Analyze this image and provide a suitable product name, a short description, and a product category. The product is likely a form of Indian craft or decor. Return ONLY a valid JSON object with \"name\", \"description\", and \"category\" keys."
+        },
+        {
+          "inlineData": {
+            "mimeType": "image/jpeg",
+            "data": "/9j/4AAQSkZJRgABAQEASABIAAD... (truncated base64 string)"
+          }
+        }
+      ]
+    },
+    "generationConfig": {
+      "responseMimeType": "application/json"
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "kalpana-api",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Dependencies for Vercel serverless functions.",
+  "dependencies": {
+    "@google/genai": "^1.24.0",
+    "node-fetch": "^3.3.2",
+    "cloudinary": "^2.7.0",
+    "replicate": "^0.29.1"
+  }
+}
