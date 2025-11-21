@@ -29,7 +29,14 @@ export async function callAI(options: {
       body: JSON.stringify(payload),
     });
 
-    const data = await response.json();
+    const text = await response.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch (e) {
+      console.error('[AI Service] Failed to parse JSON response:', text.substring(0, 500));
+      throw new Error(`Server returned invalid JSON. Status: ${response.status}. Response: ${text.substring(0, 200)}...`);
+    }
 
     if (!response.ok || !data.success) {
       // The backend may return a rich error object. We throw the whole thing.
