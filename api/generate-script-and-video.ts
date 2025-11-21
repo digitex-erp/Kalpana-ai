@@ -434,9 +434,19 @@ async function generateExtendedVideo(
   if (clipPublicIds.length === 0) throw new Error('No clips generated successfully.');
   console.log(`[Extended Video] ✅ Generated and uploaded ${clipPublicIds.length}/${numClips} clips`);
 
+  // Audio integration - support both pre-selected music and generated audio
   let audioPublicId: string | undefined;
   let audioUrl: string | undefined;
-  if (projectData?.includeAudio) {
+
+  // Check if user selected pre-defined music from MusicSelectionPage
+  if (projectData?.music?.cloudinaryId) {
+    audioPublicId = projectData.music.cloudinaryId;
+    audioUrl = `https://res.cloudinary.com/${cloudName}/video/upload/${audioPublicId}.mp3`;
+    console.log(`[Extended Video] 🎵 Using pre-selected music: ${projectData.music.name} (${audioPublicId})`);
+  }
+  // Otherwise, generate audio via Runway (if enabled and requested)
+  else if (projectData?.includeAudio && runwayApiKey) {
+    console.log('[Extended Video] 🎵 Generating background audio via Runway...');
     const generatedAudioUrl = await generateBackgroundAudio(productName, projectData?.visualTheme, actualDuration, runwayApiKey);
     if (generatedAudioUrl) {
       console.log('[Extended Video] ☁️ Uploading generated audio to Cloudinary...');
