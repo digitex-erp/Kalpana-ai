@@ -12,8 +12,8 @@ interface MusicSelectionPageProps {
 // Helper function to generate Cloudinary audio URL
 const getAudioUrl = (cloudinaryId: string | undefined): string | null => {
   if (!cloudinaryId) return null;
-  // Hardcoded cloud name - can be made configurable later
-  const cloudName = 'dxzd2kkbg';
+  // Using your Cloudinary cloud name
+  const cloudName = 'dcwhgtqld';
   return `https://res.cloudinary.com/${cloudName}/video/upload/${cloudinaryId}.mp3`;
 };
 
@@ -208,8 +208,8 @@ const MusicSelectionPage: React.FC<MusicSelectionPageProps> = ({ onNext, onBack 
                   <button
                     onClick={() => handleSelectMusic(music)}
                     className={`relative p-6 rounded-xl border-2 transition-all transform hover:scale-105 text-left ${selectedMusic?.id === music.id
-                        ? 'border-cyan-500 bg-cyan-500/20 scale-105'
-                        : 'border-gray-700 bg-gray-800 hover:border-cyan-500/50'
+                      ? 'border-cyan-500 bg-cyan-500/20 scale-105'
+                      : 'border-gray-700 bg-gray-800 hover:border-cyan-500/50'
                       }`}
                   >
                     <div className="text-4xl mb-3">{music.icon}</div>
@@ -224,8 +224,8 @@ const MusicSelectionPage: React.FC<MusicSelectionPageProps> = ({ onNext, onBack 
                           handlePreview(music);
                         }}
                         className={`mt-2 w-full py-2 px-4 rounded-lg font-semibold text-sm transition-colors ${previewingMusic?.id === music.id
-                            ? 'bg-red-500 hover:bg-red-600 text-white'
-                            : 'bg-purple-500 hover:bg-purple-600 text-white'
+                          ? 'bg-red-500 hover:bg-red-600 text-white'
+                          : 'bg-purple-500 hover:bg-purple-600 text-white'
                           }`}
                       >
                         {previewingMusic?.id === music.id ? '⏹ Stop Preview' : '▶ Preview'}
