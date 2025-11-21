@@ -1,11 +1,21 @@
 // src/pages/MusicSelectionPage.tsx
 import React, { useState, useEffect } from 'react';
 import { Music } from '../types';
+import MusicPlayer from '../components/MusicPlayer';
+import { logger } from '../services/logService';
 
 interface MusicSelectionPageProps {
   onNext: (music: Music) => void;
   onBack: () => void;
 }
+
+// Helper function to generate Cloudinary audio URL
+const getAudioUrl = (cloudinaryId: string | undefined): string | null => {
+  if (!cloudinaryId) return null;
+  // Hardcoded cloud name - can be made configurable later
+  const cloudName = 'dxzd2kkbg';
+  return `https://res.cloudinary.com/${cloudName}/video/upload/${cloudinaryId}.mp3`;
+};
 
 const musicOptions: Music[] = [
   // FESTIVAL & CELEBRATION MUSIC
@@ -45,7 +55,7 @@ const musicOptions: Music[] = [
     category: 'Festival',
     icon: '💃'
   },
-  
+
   // SPIRITUAL & DEVOTIONAL MUSIC
   {
     id: 'krishna-devotional',
@@ -74,7 +84,7 @@ const musicOptions: Music[] = [
     category: 'Spiritual',
     icon: '🎸'
   },
-  
+
   // CALM & MEDITATION MUSIC
   {
     id: 'chakra-meditation',
@@ -94,7 +104,7 @@ const musicOptions: Music[] = [
     category: 'Calm',
     icon: '🎵'
   },
-  
+
   // INSPIRATIONAL & CORPORATE MUSIC
   {
     id: 'inspirational',
@@ -123,7 +133,7 @@ const musicOptions: Music[] = [
     category: 'Professional',
     icon: '🌍'
   },
-  
+
   // NO MUSIC OPTION
   {
     id: 'no-music',
@@ -140,23 +150,36 @@ const MusicSelectionPage: React.FC<MusicSelectionPageProps> = ({ onNext, onBack 
   const [selectedMusic, setSelectedMusic] = useState<Music | null>(null);
   const [showBrowser, setShowBrowser] = useState(false);
   const [customAudioId, setCustomAudioId] = useState('');
+  const [previewingMusic, setPreviewingMusic] = useState<Music | null>(null);
 
   useEffect(() => {
     if (!selectedMusic && musicOptions.length > 0) {
       const defaultMusic = musicOptions.find(m => m.id === 'indian-festival');
       if (defaultMusic) {
         setSelectedMusic(defaultMusic);
-        console.log('[Music] Auto-selected default:', defaultMusic.name);
+        logger.info('Music', `Auto-selected default: ${defaultMusic.name}`);
       }
     }
   }, [selectedMusic]);
 
   const handleSelectMusic = (music: Music) => {
     setSelectedMusic(music);
+    logger.info('Music', `Selected: ${music.name}`);
   };
-  
+
+  const handlePreview = (music: Music) => {
+    if (previewingMusic?.id === music.id) {
+      setPreviewingMusic(null);
+      logger.info('Music', `Stopped preview: ${music.name}`);
+    } else {
+      setPreviewingMusic(music);
+      logger.info('Music', `Previewing: ${music.name}`);
+    }
+  };
+
   const handleNext = () => {
     if (selectedMusic) {
+      logger.success('Music', `Proceeding with: ${selectedMusic.name} (${selectedMusic.cloudinaryId || 'no audio'})`);
       onNext(selectedMusic);
     }
   };
@@ -181,19 +204,50 @@ const MusicSelectionPage: React.FC<MusicSelectionPageProps> = ({ onNext, onBack 
             </h3>
             <div className={`grid grid-cols-1 md:grid-cols-2 ${category === 'Spiritual' || category === 'Professional' ? 'lg:grid-cols-3' : ''} ${category === 'Festival' ? 'lg:grid-cols-4' : ''} gap-4`}>
               {musicOptions.filter(m => m.category === category).map((music) => (
-                <button
-                  key={music.id}
-                  onClick={() => handleSelectMusic(music)}
-                  className={`relative p-6 rounded-xl border-2 transition-all transform hover:scale-105 text-left ${
-                    selectedMusic?.id === music.id
-                      ? 'border-cyan-500 bg-cyan-500/20 scale-105'
-                      : 'border-gray-700 bg-gray-800 hover:border-cyan-500/50'
-                  }`}
-                >
-                  <div className="text-4xl mb-3">{music.icon}</div>
-                  <div className="text-white font-semibold mb-2">{music.name}</div>
-                  <div className="text-gray-400 text-sm">{music.description}</div>
-                </button>
+                <div key={music.id} className="flex flex-col gap-2">
+                  <button
+                    onClick={() => handleSelectMusic(music)}
+                    className={`relative p-6 rounded-xl border-2 transition-all transform hover:scale-105 text-left ${selectedMusic?.id === music.id
+                        ? 'border-cyan-500 bg-cyan-500/20 scale-105'
+                        : 'border-gray-700 bg-gray-800 hover:border-cyan-500/50'
+                      }`}
+                  >
+                    <div className="text-4xl mb-3">{music.icon}</div>
+                    <div className="text-white font-semibold mb-2">{music.name}</div>
+                    <div className="text-gray-400 text-sm mb-3">{music.description}</div>
+
+                    {/* Preview Button */}
+                    {music.cloudinaryId && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePreview(music);
+                        }}
+                        className={`mt-2 w-full py-2 px-4 rounded-lg font-semibold text-sm transition-colors ${previewingMusic?.id === music.id
+                            ? 'bg-red-500 hover:bg-red-600 text-white'
+                            : 'bg-purple-500 hover:bg-purple-600 text-white'
+                          }`}
+                      >
+                        {previewingMusic?.id === music.id ? '⏹ Stop Preview' : '▶ Preview'}
+                      </button>
+                    )}
+                  </button>
+
+                  {/* Music Player */}
+                  {previewingMusic?.id === music.id && music.cloudinaryId && (
+                    <div className="animate-fade-in">
+                      <MusicPlayer
+                        audioUrl={getAudioUrl(music.cloudinaryId) || ''}
+                        trackName={music.name}
+                        autoPlay={true}
+                        onError={(error) => {
+                          logger.error('Music', `Preview failed for ${music.name}`, error);
+                          setPreviewingMusic(null);
+                        }}
+                      />
+                    </div>
+                  )}
+                </div>
               ))}
             </div>
           </div>
@@ -211,7 +265,7 @@ const MusicSelectionPage: React.FC<MusicSelectionPageProps> = ({ onNext, onBack 
           </div>
           <span className={`transform transition-transform ${showBrowser ? 'rotate-180' : ''}`}>▼</span>
         </button>
-        
+
         {showBrowser && (
           <div className="mt-4 space-y-3">
             <p className="text-gray-400 text-sm">
