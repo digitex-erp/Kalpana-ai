@@ -9,15 +9,28 @@ import {
   VideoProject,
 } from '../types';
 import { formatMemoryForPrompt } from './directorMemoryService';
-import { generateStoryArc, addCulturalContext, generateEmotionalBeats, generateCinematography } from './storytellingService';
+import {
+  generateStoryArc,
+  addCulturalContext,
+  generateEmotionalBeats,
+  generateCinematography,
+  generateUsageScenarios,
+  generateAmbientBackground,
+  ProductUsageScenario,
+  AmbientBackground
+} from './storytellingService';
 import { StoryArc, CulturalContext } from '../types';
+import { selectCameraMovements, generateCameraDirection, SceneType } from './cinematographyService';
+import { generatePersuasiveDialog, generateSceneDialog } from './dialogService';
+import { calculateProductVisibility, enforceVisibilityRule } from './productVisibilityService';
+import { logger } from './logService';
 
 // This will be a large file. I will create the prompts based on what the services need.
 
 export const createTrainingAnalysisPrompt = (sanitizedProjects: any[]): any[] => {
   const projectData = JSON.stringify(sanitizedProjects, null, 2);
   const memory = formatMemoryForPrompt();
-  
+
   return [{
     text: `
 [SYSTEM]
@@ -70,11 +83,11 @@ export const createIntegratedAnalysisPrompt = (
   language: Language,
   youtubeAnalysis: string | null
 ): any[] => {
-    const memory = formatMemoryForPrompt();
-    const productDetails = JSON.stringify(product, null, 2);
-    
-    return [{
-        text: `
+  const memory = formatMemoryForPrompt();
+  const productDetails = JSON.stringify(product, null, 2);
+
+  return [{
+    text: `
 [SYSTEM]
 You are an expert market researcher and creative strategist. Your task is to perform an integrated analysis for a new product video. Your goal is to generate a comprehensive report in JSON format that will guide the video's creative direction.
 
@@ -123,13 +136,15 @@ Language: ${language}
 [TASK]
 Generate the JSON analysis report.
 `
-    }];
+  }];
 };
 
 export const createStoryboardPrompt = (
   projectData: VideoProject,
 ): { prompt: any[], storyArc: StoryArc, culturalContext: CulturalContext | null, narrativeStyle: string } => {
   const { product, language, brandKit, targeting, music, analysisReport, visualTheme } = projectData;
+
+  logger.info('Prompt', 'Generating enhanced storyboard prompt with PhD-level production logic');
 
   // 1. Generate Narrative Structure using the new framework
   // @ts-ignore
@@ -138,21 +153,91 @@ export const createStoryboardPrompt = (
   const culturalContext = addCulturalContext(product.name, analysisReport);
   // @ts-ignore
   const emotionalBeats = generateEmotionalBeats(storyArc, culturalContext, targetAudience);
-  const narrativeStyle = targetAudience === 'B2B' ? 
-      'Professional, ROI-focused, quality showcase' :
-      culturalContext ? 
-        'Emotional, cultural, traditional celebration' :
-        'Aspirational, lifestyle, transformation';
+  const narrativeStyle = targetAudience === 'B2B' ?
+    'Professional, ROI-focused, quality showcase' :
+    culturalContext ?
+      'Emotional, cultural, traditional celebration' :
+      'Aspirational, lifestyle, transformation';
 
-  // 2. Build the detailed prompt for the AI
+  // 2. Generate Enhanced Components
+  const usageScenarios = generateUsageScenarios(product.name, product.category, []);
+  const ambientBackground = generateAmbientBackground(product.category, culturalContext, visualTheme || 'professional');
+  const persuasiveDialog = generatePersuasiveDialog(
+    product.name,
+    product.category,
+    targetAudience,
+    language === 'Hindi' ? 'hindi' : language === 'English' ? 'english' : 'hinglish',
+    culturalContext
+  );
+
+  logger.info('Prompt', `Generated ${usageScenarios.length} usage scenarios and ambient background`);
+  logger.info('Prompt', `Persuasive dialog hook: "${persuasiveDialog.hook.substring(0, 50)}..."`);
+
+  // 3. Map emotional beats to scene types for camera selection
+  const sceneTypes: SceneType[] = emotionalBeats.map((beat, index) => {
+    if (index === 0) return 'hero';
+    if (index === emotionalBeats.length - 1) return 'outro';
+    if (beat.emotion.toLowerCase().includes('delight') || beat.emotion.toLowerCase().includes('confidence')) return 'feature';
+    if (beat.emotion.toLowerCase().includes('trust') || beat.emotion.toLowerCase().includes('opportunity')) return 'usage';
+    return 'lifestyle';
+  });
+
+  // 4. Build enhanced scene structure with camera movements and backgrounds
   const scenesStructure = emotionalBeats.map((beat, index) => {
     // @ts-ignore
     const cinematography = generateCinematography(beat, visualTheme);
     const duration = index === 0 ? 3 : (index === emotionalBeats.length - 1 ? 4 : 3);
+    const sceneType = sceneTypes[index];
+
+    // Select camera movements for this scene
+    const cameraMovements = selectCameraMovements(sceneType, product.category, beat.emotion, duration);
+    const cameraDirection = cameraMovements.map(m => generateCameraDirection(m)).join('\n');
+
+    // Get usage scenario if applicable
+    const usageScenario = sceneType === 'usage' && usageScenarios.length > 0
+      ? usageScenarios[Math.min(index, usageScenarios.length - 1)]
+      : null;
+
+    // Get dialog for this scene
+    const sceneDialog = generateSceneDialog(
+      sceneType === 'hero' ? 'hook' :
+        sceneType === 'feature' ? 'feature' :
+          sceneType === 'usage' ? 'usage' :
+            sceneType === 'lifestyle' ? 'lifestyle' : 'outro',
+      persuasiveDialog,
+      language === 'Hindi' ? 'hindi' : language === 'English' ? 'english' : 'hinglish'
+    );
+
     return `
 ---
-### SCENE ${index + 1} (Act ${index + 1}: ${beat.emotion})
+### SCENE ${index + 1} (Act ${index + 1}: ${beat.emotion}) - ${sceneType.toUpperCase()}
 **NARRATIVE GOAL:** ${beat.scene}
+
+**CAMERA MOVEMENTS:**
+${cameraDirection}
+
+**PRODUCT VISIBILITY TARGET:** ${Math.round(cameraMovements.reduce((sum, m) => sum + m.productVisibility, 0) / cameraMovements.length * 100)}%
+
+**BACKGROUND & AMBIENCE:**
+Setting: ${ambientBackground.setting}
+Lighting: ${ambientBackground.lighting}
+Props: ${ambientBackground.props.join(', ')}
+Color Palette: ${ambientBackground.colorPalette.join(', ')}
+Depth of Field: ${ambientBackground.depthOfField}
+Ambience: ${ambientBackground.ambience}
+
+${usageScenario ? `**PRODUCT USAGE DEMONSTRATION:**
+Action: ${usageScenario.action}
+Hands: ${usageScenario.hands}
+Camera Focus: ${usageScenario.cameraFocus}
+Description: ${usageScenario.description}
+` : ''}
+
+**PERSUASIVE DIALOG:**
+English: ${sceneDialog.english}
+Hindi: ${sceneDialog.hindi}
+Hinglish: ${sceneDialog.hinglish}
+
 **CINEMATOGRAPHY:** ${cinematography}
 **DURATION:** ${duration} seconds.
 ---
@@ -161,12 +246,34 @@ export const createStoryboardPrompt = (
 
   const totalDuration = emotionalBeats.reduce((sum, beat, index) => sum + (index === 0 ? 3 : (index === emotionalBeats.length - 1 ? 4 : 3)), 0);
 
+  logger.info('Prompt', `Generated enhanced scene structure with ${emotionalBeats.length} scenes, total ${totalDuration}s`);
+
   const promptText = `
 [SYSTEM]
-You are an AI Video Director and expert copywriter for the Indian market. Your task is to create a creative storyboard based on a pre-defined narrative structure.
+You are an AI Video Director and expert copywriter for the Indian market. Your task is to create a creative storyboard based on a pre-defined narrative structure with PhD-level video production principles.
 
-**NARRATIVE STRUCTURE & CINEMATOGRAPHY NOTES:**
-You have been given a 3-act story structure with emotional beats and cinematography instructions for each scene. Your job is to fill in the creative details.
+**🎯 CRITICAL REQUIREMENT: 80% PRODUCT VISIBILITY RULE**
+The product MUST be visible and prominent in at least 80% of the total video duration. This is NON-NEGOTIABLE.
+
+**PRODUCT VISIBILITY GUIDELINES:**
+- Hero shots: Product occupies 60-80% of frame
+- Feature shots: Product fills 80-100% of frame (macro details)
+- Usage shots: Product visible in 50-70% of frame (with hands/context)
+- Lifestyle shots: Product visible in 40-60% of frame (in environment)
+- Outro: Product visible in 70-90% of frame (final impression)
+
+**SHOT COMPOSITION RULES:**
+1. Rule of Thirds: Position product at intersection points for visual interest
+2. Leading Lines: Use background elements to guide eye to product
+3. Negative Space: Leave 20-30% empty space for text overlays
+4. Depth Layers: Foreground (product) + Midground (context) + Background (ambience)
+5. Color Contrast: Product must stand out from background (30%+ contrast)
+6. Lighting Priority: Product must be 2x brighter than background
+7. Focus Plane: Product always in sharpest focus
+8. Symmetry/Balance: Centered for hero shots, off-center for lifestyle
+
+**NARRATIVE STRUCTURE & ENHANCED CINEMATOGRAPHY:**
+You have been given a 3-act story structure with emotional beats, camera movements, product visibility targets, ambient backgrounds, usage demonstrations, and persuasive dialogs for each scene.
 
 ${scenesStructure}
 
@@ -174,6 +281,7 @@ ${scenesStructure}
 ${culturalContext ? `**CULTURAL CONTEXT:** ${culturalContext.tradition} - ${culturalContext.symbolism}` : ''}
 
 **PRODUCT:** ${product.name}
+**CATEGORY:** ${product.category}
 **TARGETING:** ${targeting.platform} for ${targeting.audience}
 **LANGUAGE:** ${language}
 **TOTAL DURATION:** ${totalDuration}s
@@ -187,26 +295,34 @@ For EACH scene defined above, generate the creative elements. The total duration
   "title": "A catchy title for the video script.",
   "scenes": [
     {
-      "visual": "A detailed, creative visual description for Scene 1 based on its NARRATIVE GOAL and CINEMATOGRAPHY notes (max 100 chars).",
-      "dialogue": "Primary narration in ${language} for Scene 1 (max 150 chars).",
+      "visual": "A detailed, creative visual description for Scene 1 based on its NARRATIVE GOAL, CAMERA MOVEMENTS, and BACKGROUND. MUST show product prominently (max 150 chars).",
+      "dialogue": "Primary narration in ${language} for Scene 1 using the PERSUASIVE DIALOG provided (max 150 chars).",
       "dialogue_en": "The English version of the narration for Scene 1.",
       "dialogue_hi": "Creative and culturally relevant Hindi narration for Scene 1. Make it sound natural and persuasive for an Indian audience.",
       "textOverlay": "On-screen text for Scene 1 (max 50 chars).",
-      "cameraAngle": "e.g., 'Close-up'",
-      "transition": "e.g., 'Cut to'",
+      "cameraAngle": "Use the CAMERA MOVEMENT specified (e.g., 'Static hero shot', 'Push-in', 'Orbital 360°')",
+      "transition": "e.g., 'Cut to', 'Dissolve', 'Wipe'",
       "duration": 3,
-      "emotion": "The emotion for Scene 1 (e.g., 'Nostalgia', 'Trust')"
+      "emotion": "The emotion for Scene 1 (e.g., 'Nostalgia', 'Trust')",
+      "productVisibility": 0.8
     }
   ],
   "brandTagline": "A short, memorable tagline for the brand.",
-  "musicStyle": "${music.mood}"
+  "musicStyle": "${music.mood}",
+  "productVisibilityScore": 0.85
 }
 
 **RULES:**
 1. The number of scenes in your output JSON must exactly match the number of scenes in the narrative structure provided (${emotionalBeats.length} scenes).
 2. The "duration" for each scene must match the duration specified in the structure.
 3. The "emotion" for each scene must match the emotion specified.
-4. If 'generateOutro' is true (${brandKit.generateOutro}), make the final scene a branded outro.
+4. The "productVisibility" for each scene must meet or exceed the target specified.
+5. The overall "productVisibilityScore" must be at least 0.80 (80%).
+6. Use the CAMERA MOVEMENTS specified for each scene in the "cameraAngle" field.
+7. Use the PERSUASIVE DIALOG provided for each scene, adapted to ${language}.
+8. Incorporate the BACKGROUND & AMBIENCE details into the "visual" description.
+9. If a PRODUCT USAGE DEMONSTRATION is specified, include it in the "visual" description.
+10. If 'generateOutro' is true (${brandKit.generateOutro}), make the final scene a branded outro.
 
 **GENERATE THE STORYBOARD JSON NOW.**
 `;
@@ -220,13 +336,13 @@ For EACH scene defined above, generate the creative elements. The total duration
 };
 
 export const createAlternativeHooksPrompt = (
-    product: Product,
-    brandKit: BrandKit,
-    targeting: Targeting,
-    music: Music
+  product: Product,
+  brandKit: BrandKit,
+  targeting: Targeting,
+  music: Music
 ): any[] => {
-    return [{
-        text: `
+  return [{
+    text: `
 [SYSTEM]
 You are an expert social media marketer specializing in creating viral video hooks for the Indian market.
 Your task is to generate 3 alternative opening scenes (hooks) for a video about the product provided.
@@ -256,49 +372,49 @@ Brand/Targeting: ${JSON.stringify({ brandKit, targeting, music }, null, 2)}
 [TASK]
 Generate a JSON array with exactly 3 alternative hook scenes.
 `
-    }];
+  }];
 };
 
 export const createVideoGenerationPrompt = (storyboard: Storyboard, product: Product, narrationVoice: any): string => {
-    // Determine the narration script based on the selected language
-    const fullNarrationScript = storyboard.scenes
-        .map(scene => {
-            if (narrationVoice.language === 'hindi' && scene.dialogue_hi) {
-                return scene.dialogue_hi;
-            }
-            if (narrationVoice.language === 'english' && scene.dialogue_en) {
-                return scene.dialogue_en;
-            }
-            // Fallback to the main dialogue field if the language-specific one is missing
-            return scene.dialogue;
-        })
-        .filter(dialogue => dialogue && dialogue.trim() !== '')
-        .join(' \n');
+  // Determine the narration script based on the selected language
+  const fullNarrationScript = storyboard.scenes
+    .map(scene => {
+      if (narrationVoice.language === 'hindi' && scene.dialogue_hi) {
+        return scene.dialogue_hi;
+      }
+      if (narrationVoice.language === 'english' && scene.dialogue_en) {
+        return scene.dialogue_en;
+      }
+      // Fallback to the main dialogue field if the language-specific one is missing
+      return scene.dialogue;
+    })
+    .filter(dialogue => dialogue && dialogue.trim() !== '')
+    .join(' \n');
 
-    // Generate scene descriptions
-    const visualPrompts = storyboard.scenes.map(scene => {
-        let visual = scene.visual;
-        if (scene.textOverlay) {
-            visual += ` with on-screen text that says "${scene.textOverlay}".`;
-        }
-        return visual;
-    });
+  // Generate scene descriptions
+  const visualPrompts = storyboard.scenes.map(scene => {
+    let visual = scene.visual;
+    if (scene.textOverlay) {
+      visual += ` with on-screen text that says "${scene.textOverlay}".`;
+    }
+    return visual;
+  });
 
-    // Create the narration part of the prompt
-    let narrationPromptSection = '';
-    if (narrationVoice.language === 'none' || !fullNarrationScript) {
-        narrationPromptSection = `**Narration:**
+  // Create the narration part of the prompt
+  let narrationPromptSection = '';
+  if (narrationVoice.language === 'none' || !fullNarrationScript) {
+    narrationPromptSection = `**Narration:**
 This video should have NO spoken narration or voice-over. It will be music-only.`;
-    } else {
-        narrationPromptSection = `**Narration Script & Voice Direction:**
+  } else {
+    narrationPromptSection = `**Narration Script & Voice Direction:**
 The video MUST be narrated with the following script. The voice should be a **${narrationVoice.gender}** voice, speaking in **${narrationVoice.language}** with a **${narrationVoice.style}** tone.
 
 **Script:**
 "${fullNarrationScript}"`;
-    }
+  }
 
 
-    return `
+  return `
 Generate a video for a product named "${product.name}".
 
 **Overall Style:**
